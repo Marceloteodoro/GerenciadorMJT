@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>MJT Streaming - Serviços Digitais</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        /* 1. ESTILOS GERAIS E LAYOUT */
+        
+        /* ---------------------------------------------------- */
+        /* NOVO ESTILO: BODY LIMPO PARA FUNDO GLOBAL FUNCIONAR */
+        /* ---------------------------------------------------- */
+        body {
+            /* Remove qualquer fundo ou filtro que possa interferir */
+            background: none !important; 
+            filter: none !important; 
+            
+            /* Estilos de layout mantidos */
+            max-width: 1200px; 
+            margin: 0 auto 40px auto; 
+            padding: 0; 
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+        }
+
+        /* ---------------------------------------------------- */
+        /* 💡 ESTILO DEDICADO PARA O FUNDO GLOBAL COM FILTRO */
+        /* ---------------------------------------------------- */
+        #fundo-global-cobertura {
+            position: fixed; /* Fixa na tela, independente da rolagem */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* CRUCIAL: Coloca esta camada atrás de todo o conteúdo */
+            
+            /* 1. CARREGA SUA IMAGEM. AJUSTE A EXTENSÃO ABAIXO! */
+            background-image: url('foto1.png'); 
+            
+            /* 2. Propriedades para cobrir a tela inteira */
+            background-size: cover; 
+            background-position: center;
+            
+            /* 3. Aplica o filtro de escurecimento */
+            filter: brightness(0.65); 
+        }
+        /* ---------------------------------------------------- */
+
+        /* ---------------------------------------------------- */
+        /* ESTILOS PARA TELA HOME */
+        /* ---------------------------------------------------- */
+        #home-screen {
+            filter: none; 
+            background-image: none;
+            
+            display: flex; 
+            flex-direction: column;
+            align-items: center;
+            justify-content: center; 
+            padding: 20px; 
+            min-height: 100vh;
+            text-align: center;
+            position: relative; 
+            overflow: hidden; 
+            z-index: 10; 
+            margin: 0 auto; 
+            max-width: 100%;
+        }
+
+        .central-box {
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            position: relative; 
+            z-index: 10;
+        }
+
+        .home-header {
+            width: 100%;
+            margin-bottom: 20px;
+            color: white !important; 
+        }
+
+        .home-header h1 {
+            color: white; 
+            font-size: 2.8em; 
+            margin-bottom: 5px;
+            border-bottom: none;
+        }
+
+        .home-header h2 {
+            color: #BBDEFB; 
+            font-size: 1.2em; 
+            margin-top: 0;
+            border-bottom: 2px solid #BBDEFB;
+            padding-bottom: 15px;
+        }
+
+        .info-login-box {
+            background-color: rgba(0, 0, 0, 0.4); 
+            backdrop-filter: blur(8px); 
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .info-login-box h3 {
+            color: #e67e22; 
+            margin-top: 0;
+            margin-bottom: 5px;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        #horario-brasilia {
+            font-size: 2.2em; 
+            font-weight: bold;
+            color: #FFFFFF; 
+            text-align: center;
+            padding: 0;
+        }
+        
+        #home-screen button {
+            background-color: #28a745; 
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1em; 
+            font-weight: bold;
+            transition: background-color 0.3s;
+            padding: 12px 30px; 
+            margin-top: 15px;
+        }
+        #home-screen button:hover {
+            background-color: #1e7e34;
+        }
+
+        /* ---------------------------------------------------- */
+        /* ESTILOS PARA TELA DE LOGIN */
+        /* ---------------------------------------------------- */
+        #login-screen { 
+            display: none; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            background: none; 
+            padding: 20px; 
+            box-sizing: border-box; 
+            filter: none; 
+            z-index: 10;
+        }
+        .login-box { 
+            padding: 30px; 
+            max-width: 90%; 
+            background-color: rgba(255, 255, 255, 0.95); 
+            border-radius: 8px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); 
+        }
+        /* Mantém o restante dos estilos de login */
+
+
+        /* ---------------------------------------------------- */
+        /* ESTILOS DO PAINEL ADMINISTRATIVO */
+        /* ---------------------------------------------------- */
+        #main-content.container { 
+            padding: 10px; 
+            background-color: white; /* Fundo branco para o conteúdo principal */
+            margin-top: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); 
+            z-index: 5;
+            position: relative;
+        }
+
+        /* O restante dos estilos do painel administrativo (tabelas, botões, etc.) é mantido */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); background-color: white; }
+        th, td { padding: 10px 8px; border: 1px solid #ddd; text-align: left; font-size: 0.9em; }
+        th { background-color: #1a73e8; color: white; text-transform: uppercase; }
+        .nav-wrapper { display: flex; justify-content: center; align-items: center; background-color: #1a73e8; padding: 5px 0; flex-wrap: wrap; }
+        nav ul { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; justify-content: center; }
+        nav ul li a { display: block; color: white; text-align: center; padding: 10px 12px; text-decoration: none; font-weight: bold; transition: background-color 0.3s; font-size: 0.9em; }
+        #logout-button { padding: 6px 10px; margin-left: 10px; background-color: #e67e22; }
+        .metricas-dashboard { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; margin-bottom: 40px; }
+        .card-metrica { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); flex: 1; min-width: 200px; text-align: center; }
+        #faturamento .valor { color: #28a745; } 
+        #total-clientes .valor { color: #1a73e8; } 
+        #vencimento-mes .valor { color: #e67e22; } 
+        #vencimento-proximo-mes .valor { color: #8e44ad; } 
+        .graficos-container { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 30px; }
+        .grafico-wrapper { width: 45%; min-width: 300px; margin-bottom: 20px; height: 400px; position: relative; box-sizing: border-box; }
+        @media (max-width: 768px) {
+            .metricas-dashboard { flex-direction: column; }
+            .card-metrica { min-width: 100%; margin-bottom: 10px; }
+            .grafico-wrapper { width: 100%; height: 350px; }
+            .nav-wrapper { flex-direction: column; padding: 10px 0; }
+            nav ul { flex-direction: row; justify-content: center; width: 100%; }
+            nav ul li a { padding: 8px 8px; font-size: 0.8em; }
+            #logout-button { margin: 10px auto; width: 90%; }
+            table { display: block; overflow-x: auto; white-space: nowrap; }
+            .registro-rapido-grid { grid-template-columns: 1fr; }
+        }
+        .form-container { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        label { display: block; margin-top: 15px; font-weight: bold; color: #555; }
+        input[type="text"], input[type="date"], input[type="number"], select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; text-transform: uppercase; }
+        textarea { resize: vertical; }
+        button[type="submit"] { display: block; width: 100%; padding: 12px; margin-top: 25px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.1em; transition: background-color 0.3s; }
+        button[type="submit"]:hover { background-color: #1e7e34; }
+        #novos-clientes, #dados-clientes, #historico-pagamentos, #graficos { display: none; }
+        .botao-editar { background-color: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.9em; transition: background-color 0.3s; margin-right: 5px; }
+        .botao-editar:hover { background-color: #0056b3; }
+        .botao-deletar { background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.9em; transition: background-color 0.3s; }
+        .botao-deletar:hover { background-color: #c82333; }
+        .proxima-renovacao { font-weight: bold; color: #1a73e8; }
+        .registro-rapido-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; align-items: end; }
+        .registro-rapido-grid select, .registro-rapido-grid input { margin-top: 0; }
+        .registro-rapido-grid button { margin-top: 5px; padding: 10px; }
+        #logout-button { background-color: #e67e22; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-left: 20px; font-weight: bold; transition: background-color 0.3s; }
+        #logout-button:hover { background-color: #d35400; } 
+
+    </style>
+</head>
+<body>
+    
+    <div id="fundo-global-cobertura"></div>
+    
+    <div id="home-screen">
+        <div class="central-box">
+            <div class="home-header">
+                <h1>MJT STREAMING</h1>
+                <h2>GERENCIADOR DE SERVIÇOS DIGITAIS</h2>
+            </div>
+
+            <div class="info-login-box">
+                
+                <h3 style="margin-bottom: 5px;">HORÁRIO DE BRASÍLIA</h3>
+                <div id="horario-brasilia"></div> 
+                
+                <p style="margin-top: 30px; font-weight: bold; color: #FFFFFF;">
+                    <span style="border-bottom: 1px solid #BBDEFB;">ACESSO ADMINISTRATIVO:</span>
+                </p>
+                <button onclick="mostrarTelaLogin()">
+                    ENTRAR NO PAINEL
+                </button>
+                <p style="color: #BBDEFB; font-size: 0.8em; margin-top: 20px; margin-bottom: 0;">
+                    Seu Dashboard de gestão financeira.
+                </p>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="login-screen">
+        <div class="login-box">
+            <h2>ACESSO RESTRITO</h2>
+            <form id="loginForm" onsubmit="processLogin(); return false;">
+                <label for="username" style="text-align: left; display: block;">Login:</label>
+                <input type="text" id="username" placeholder="Digite seu login" required style="text-transform: none;">
+                
+                <label for="password" style="text-align: left; display: block;">Senha:</label>
+                <input type="password" id="password" placeholder="Digite sua senha" required>
+                
+                <button type="submit">ENTRAR</button>
+            </form>
+            <p id="login-error" style="color: red; margin-top: 15px; display: none;">Login ou Senha incorretos.</p>
+             <button onclick="mostrarTelaHome()" style="background-color: #999; margin-top: 15px;">VOLTAR</button>
+        </div>
+    </div>
+    
+    
+    <div id="main-content" class="container"> 
+        
+        <div class="nav-wrapper">
+            <nav>
+                <ul>
+                    <li><a href="#dashboard" class="active">Dashboard</a></li> 
+                    <li><a href="#novos-clientes">Novo Cliente</a></li>
+                    <li><a href="#dados-clientes">Clientes</a></li>
+                    <li><a href="#historico-pagamentos">Histórico</a></li>
+                    <li><a href="#graficos">Gráficos</a></li>
+                </ul>
+            </nav>
+            <button id="logout-button" onclick="logout()">SAIR</button>
+        </div>
+
+        <div>
+            
+            <div id="dashboard" class="secao">
+                <h1>VISÃO GERAL DO GERENCIAMENTO</h1>
+                
+                <div class="metricas-dashboard">
+                    <div class="card-metrica" id="faturamento">
+                        <h3>Faturamento Mensal Estimado</h3>
+                        <p class="valor" id="valorFaturamento">R$ 0,00</p>
+                    </div>
+                    
+                    <div class="card-metrica" id="total-clientes">
+                        <h3>Total de Clientes Ativos</h3>
+                        <p class="valor" id="valorClientes">0</p>
+                    </div>
+                    
+                    <div class="card-metrica" id="vencimento-mes">
+                        <h3>Vencimentos Mês Atual</h3>
+                        <p class="valor" id="valorVencimentosMes">0</p>
+                    </div>
+                    
+                    <div class="card-metrica" id="vencimento-proximo-mes">
+                        <h3>Previsão Próximo Mês</h3>
+                        <p class="valor" id="valorVencimentosProximoMes">0</p>
+                    </div>
+                </div>
+                
+                <div class="graficos-container">
+                    
+                    <div class="grafico-wrapper">
+                        <h2>SERVIÇOS VENCENDO em <span id="tituloMesAtual">MÊS ATUAL</span></h2>
+                        <canvas id="vencimentosMesAtualChart"></canvas>
+                    </div>
+                    
+                    <div class="grafico-wrapper">
+                        <h2>SERVIÇOS VENCENDO em <span id="tituloProximoMes">PRÓXIMO MÊS</span></h2>
+                        <canvas id="vencimentosProximoMesChart"></canvas>
+                    </div>
+                    
+                    <div class="grafico-wrapper">
+                        <h2>CLIENTES POR SERVIÇO (GERAL)</h2>
+                        <canvas id="dashboardServicosChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="novos-clientes" class="secao">
+                 <h1>CADASTRAR NOVO CLIENTE</h1>
+                 <div class="form-container">
+                     <form id="cadastroClienteForm" onsubmit="return false;">
+                         <label for="nome">Nome do Cliente:</label>
+                         <input type="text" id="nome" name="nome" required>
+                         
+                         <label for="servico">Serviço Stream:</label>
+                         <select id="servico" name="servico" required>
+                             <option value="">SELECIONE...</option>
+                             <option value="Netflix">NETFLIX</option>
+                             <option value="AmazonPrime">AMAZON PRIME</option>
+                             <option value="HBO">HBO MAX</option>
+                             <option value="Outro">OUTRO</option>
+                         </select>
+                         
+                         <label for="appNome">Nome do Aplicativo (App):</label>
+                         <input type="text" id="appNome" name="appNome" placeholder="EX: NETFLIX PADRÃO, PRIME VÍDEO, ETC.">
+                         <label for="valor">Valor do Serviço (R$):</label>
+                         <input type="number" id="valor" name="valor" step="0.01" min="0" placeholder="EX: 29.90" required>
+
+                         <label for="vencimento">Data de Vencimento (Próxima Renovação):</label>
+                         <input type="date" id="vencimento" name="vencimento" required>
+
+                         <label for="pagamento">Forma de Pagamento:</label>
+                         <select id="pagamento" name="pagamento" required>
+                             <option value="">SELECIONE...</option>
+                             <option value="PIX">PIX</option>
+                             <option value="Transferencia">TRANSFERÊNCIA BANCÁRIA</option>
+                             <option value="Cartao">CARTÃO DE CRÉDITO</option>
+                         </select>
+
+                         <label for="banco">Banco/Plataforma de Recebimento:</label>
+                         <input type="text" id="banco" name="banco" placeholder="EX: NUBANK, PICPAY, ETC." required>
+
+                         <label for="renovacao">Período de Renovação (dias - manter 30, é calculado por mês):</label>
+                         <input type="text" id="renovacao" name="renovacao" value="30" disabled>
+                         
+                         <label for="observacoes">Observações:</label>
+                         <textarea id="observacoes" name="observacoes" rows="3" placeholder="QUALQUER NOTA IMPORTANTE SOBRE O CLIENTE OU SERVIÇO..."></textarea>
+                         <button type="submit">CADASTRAR CLIENTE</button>
+                     </form>
+                 </div>
+            </div>
+
+            <div id="dados-clientes" class="secao">
+                <h1>LISTA DE CLIENTES ATIVOS</h1>
+                
+                <div class="form-container" style="margin-bottom: 30px;">
+                    <h2>REGISTRO RÁPIDO DE PAGAMENTO E RENOVAÇÃO</h2>
+                    <form id="registroPagamentoForm" onsubmit="return false;">
+                        <div class="registro-rapido-grid">
+                            <div>
+                                <label for="clientePagamento">Selecionar Cliente:</label>
+                                <select id="clientePagamento" required>
+                                    <option value="">SELECIONE O CLIENTE</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="dataPagamentoRapido">Data do Pagamento:</label>
+                                <input type="date" id="dataPagamentoRapido" required>
+                            </div>
+                            <div>
+                                <label for="pagamentoRapido">Forma de Pagamento:</label>
+                                <select id="pagamentoRapido" required>
+                                    <option value="PIX">PIX</option>
+                                    <option value="Transferencia">TRANSFERÊNCIA BANCÁRIA</option>
+                                    <option value="Cartao">CARTÃO DE CRÉDITO</option>
+                                </select>
+                            </div>
+                             <div>
+                                <label for="bancoPagamentoRapido">Banco/Plataforma:</label>
+                                <input type="text" id="bancoPagamentoRapido" placeholder="EX: NUBANK, PICPAY">
+                            </div>
+                            <div style="grid-column: span 4;">
+                                 <button type="submit">REGISTRAR PAGAMENTO E RENOVAR</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                
+                <div id="tabela-dados-clientes"></div>
+            </div>
+            
+            <div id="historico-pagamentos" class="secao">
+                <h1>HISTÓRICO DE PAGAMENTOS</h1>
+                
+                <div class="form-container" style="margin-bottom: 20px;">
+                    <h2>REGISTRAR PAGAMENTO</h2>
+                    <p>AO REGISTRAR O PAGAMENTO EFETUADO, O SISTEMA IRÁ CALCULAR A **PRÓXIMA DATA DE VENCIMENTO** AUTOMATICAMENTE.</p>
+                    <h2>FILTROS</h2>
+                    <label for="filtroPagamento">Filtrar por Forma de Pagamento:</label>
+                    <select id="filtroPagamento" onchange="carregarHistoricoPagamentos()">
+                        <option value="todos">MOSTRAR TODOS</option>
+                        <option value="PIX">PIX</option>
+                        <option value="Transferencia">TRANSFERÊNCIA BANCÁRIA</option>
+                        <option value="Cartao">CARTÃO DE CRÉDITO</option>
+                    </select>
+                </div>
+
+                <div id="tabela-historico"></div>
+            </div>
+            
+            <div id="graficos" class="secao">
+                <h1>GRÁFICOS DETALHADOS</h1>
+                <div class="graficos-container">
+                    <div class="grafico-wrapper">
+                        <h2>VENCIMENTOS POR MÊS</h2>
+                        <canvas id="vencimentosAnualChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // CONFIGURAÇÃO DE LOGIN
+        const LOGIN_CORRETO = "ADMIN";
+        const SENHA_CORRETA = "12345"; 
+        
+        // VARIÁVEIS GLOBAIS PARA CONTROLE DE GRÁFICOS
+        let vencimentosMesAtualChart = null; 
+        let vencimentosProximoMesChart = null; 
+        let dashboardServicosChart = null; 
+        let vencimentosAnualChart = null; 
+        let horarioInterval; 
+
+        /* ---------------------------------------------------- */
+        /* FUNÇÕES DE CONTROLE DE TELA */
+        /* ---------------------------------------------------- */
+        
+        function pararRelogio() {
+            if (horarioInterval) {
+                clearInterval(horarioInterval);
+            }
+        }
+
+        window.mostrarTelaHome = function() {
+            document.getElementById('home-screen').style.display = 'flex';
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-content').style.display = 'none';
+            
+            iniciarRelogioBrasilia();
+        }
+
+        window.mostrarTelaLogin = function() {
+            document.getElementById('home-screen').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('main-content').style.display = 'none';
+            pararRelogio(); 
+        }
+        
+        function processLogin() {
+            const username = document.getElementById('username').value.toUpperCase();
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('login-error');
+            
+            if (username === LOGIN_CORRETO && password === SENHA_CORRETA) {
+                sessionStorage.setItem('isLoggedIn', 'true');
+                errorMsg.style.display = 'none';
+                checkLogin(); 
+            } else {
+                sessionStorage.setItem('isLoggedIn', 'false');
+                errorMsg.style.display = 'block';
+                document.getElementById('password').value = '';
+            }
+        }
+        
+        window.logout = function() {
+            sessionStorage.removeItem('isLoggedIn');
+            alert('Sessão encerrada com sucesso! Voltando para a tela inicial.');
+            mostrarTelaHome(); 
+        }
+
+        function checkLogin() { 
+            const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+            
+            if (isLoggedIn) {
+                document.getElementById('home-screen').style.display = 'none';
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block'; 
+                
+                pararRelogio(); 
+                
+                // GARANTE QUE O DOM ESTEJA PRONTO ANTES DE CARREGAR OS GRÁFICOS
+                mostrarSecao('#dashboard'); 
+                setTimeout(carregarDashboard, 50); 
+               
+            } else {
+                mostrarTelaHome();
+            }
+        }
+        
+        /* ---------------------------------------------------- */
+        /* WIDGETS E UTILITÁRIOS DA HOME */
+        /* ---------------------------------------------------- */
+
+        function iniciarRelogioBrasilia() {
+            pararRelogio(); 
+            const divHorario = document.getElementById('horario-brasilia');
+
+            function atualizarHorario() {
+                const now = new Date();
+                const options = {
+                    timeZone: 'America/Sao_Paulo',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false 
+                };
+                const horaFormatada = now.toLocaleTimeString('pt-BR', options);
+                const dataFormatada = now.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: 'long', year: 'numeric' });
+                
+                divHorario.innerHTML = `${horaFormatada} <span style="display: block; font-size: 0.5em; font-weight: normal; color: #BBDEFB;">${dataFormatada.toUpperCase()}</span>`;
+            }
+
+            atualizarHorario(); 
+            horarioInterval = setInterval(atualizarHorario, 1000); 
+        }
+
+        /* ---------------------------------------------------- */
+        /* FUNÇÕES GERAIS DO PAINEL */
+        /* ---------------------------------------------------- */
+        
+        const formatarMoeda = (valor) => {
+            return parseFloat(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        };
+        
+        const formatarData = (dataString) => {
+            if (!dataString) return '-';
+            const partes = dataString.split('-');
+            if (partes.length === 3) {
+                const [ano, mes, dia] = partes;
+                return `${dia}/${mes}/${ano}`;
+            }
+            return dataString; 
+        };
+
+        const calcularProximoVencimento = (dataBase) => {
+            if (!dataBase) return '';
+
+            // A dataBase pode ser o vencimento anterior ou a dataPagamento
+            const data = new Date(dataBase + 'T00:00:00'); 
+            const diaOriginal = data.getDate();
+            
+            data.setMonth(data.getMonth() + 1);
+            
+            // Corrige para meses com menos dias (ex: 31 de jan -> 28 fev)
+            if (data.getDate() < diaOriginal) {
+                data.setDate(0); 
+            }
+
+            const ano = data.getFullYear();
+            const mes = String(data.getMonth() + 1).padStart(2, '0');
+            const dia = String(data.getDate()).padStart(2, '0');
+            
+            return `${ano}-${mes}-${dia}`;
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const links = document.querySelectorAll('nav ul li a');
+            const secoes = document.querySelectorAll('.secao');
+            const formCadastro = document.getElementById('cadastroClienteForm');
+            const formRegistroRapido = document.getElementById('registroPagamentoForm'); 
+            
+            function mostrarSecao(idSecao) {
+                secoes.forEach(secao => { secao.style.display = 'none'; });
+                const secaoAtiva = document.querySelector(idSecao);
+                if (secaoAtiva) { secaoAtiva.style.display = 'block'; }
+                
+                links.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === idSecao) { link.classList.add('active'); }
+                });
+
+                if (idSecao === '#dashboard') {
+                    carregarDashboard();
+                } else if (idSecao === '#dados-clientes') {
+                    carregarTabelaClientes();
+                    popularSelectClientes(); 
+                } else if (idSecao === '#graficos') {
+                    gerarGraficoVencimentosAnual(); 
+                } else if (idSecao === '#historico-pagamentos') {
+                    carregarHistoricoPagamentos();
+                }
+            }
+            
+            links.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    mostrarSecao(link.getAttribute('href'));
+                });
+            });
+
+            function getClientes() {
+                const clientes = localStorage.getItem('clientesStream');
+                return clientes ? JSON.parse(clientes) : [];
+            }
+
+            function salvarClientes(clientes) {
+                localStorage.setItem('clientesStream', JSON.stringify(clientes));
+            }
+            
+            window.deletarCliente = function(index) {
+                if (confirm(`TEM CERTEZA QUE DESEJA DELETAR O CLIENTE ${getClientes()[index].nome}?`)) {
+                    const clientes = getClientes();
+                    clientes.splice(index, 1);
+                    salvarClientes(clientes);
+                    carregarTabelaClientes();
+                    carregarDashboard(); 
+                    alert('CLIENTE DELETADO COM SUCESSO!');
+                }
+            }
+            
+            window.editarCliente = function(index) {
+                const clientes = getClientes();
+                let cliente = clientes[index];
+                
+                const campos = [
+                    'NOME', 'SERVIÇO', 'APP NOME', 'VALOR', 'VENCIMENTO', 
+                    'PAGAMENTO', 'BANCO', 'OBSERVAÇÕES'
+                ];
+                
+                let promptMsg = `EDITAR CLIENTE: ${cliente.nome}\n\n`;
+                promptMsg += "QUAL CAMPO DESEJA ALTERAR? Digite o NOME do campo (ex: NOME, VALOR, VENCIMENTO):\n\n";
+                promptMsg += campos.join(', ');
+
+                let campoParaEditar = prompt(promptMsg);
+                
+                if (campoParaEditar) {
+                    campoParaEditar = campoParaEditar.toUpperCase().trim();
+                    let valorAtual = '';
+                    let chave = '';
+
+                    switch (campoParaEditar) {
+                        case 'NOME': chave = 'nome'; valorAtual = cliente.nome; break;
+                        case 'SERVIÇO': chave = 'servico'; valorAtual = cliente.servico; break;
+                        case 'APP NOME': chave = 'appNome'; valorAtual = cliente.appNome; break;
+                        case 'VALOR': chave = 'valor'; valorAtual = cliente.valor; break;
+                        case 'VENCIMENTO': chave = 'vencimento'; valorAtual = cliente.vencimento; break;
+                        case 'PAGAMENTO': chave = 'pagamento'; valorAtual = cliente.pagamento; break;
+                        case 'BANCO': chave = 'banco'; valorAtual = cliente.banco; break;
+                        case 'OBSERVAÇÕES': chave = 'observacoes'; valorAtual = cliente.observacoes; break;
+                        default:
+                            alert('CAMPO INVÁLIDO. TENTE NOVAMENTE.');
+                            return;
+                    }
+
+                    const novoValor = prompt(`EDITANDO O CAMPO: ${campoParaEditar}\nVALOR ATUAL: ${valorAtual}\n\nDIGITE O NOVO VALOR:`);
+                    
+                    if (novoValor !== null) { 
+                        let valorFinal = novoValor;
+
+                        if (['nome', 'appNome', 'banco', 'observacoes'].includes(chave)) {
+                            valorFinal = novoValor.toUpperCase();
+                        }
+                        
+                        if (chave === 'valor' && valorFinal !== '') {
+                            const valorNumerico = parseFloat(valorFinal.replace(',', '.'));
+                            if (isNaN(valorNumerico)) {
+                                alert('VALOR INVÁLIDO PARA O CAMPO VALOR. OPERAÇÃO CANCELADA.');
+                                return;
+                            }
+                            valorFinal = valorNumerico.toFixed(2); 
+                        }
+
+                        cliente[chave] = valorFinal;
+                        salvarClientes(clientes);
+                        
+                        alert(`CAMPO ${campoParaEditar} DO CLIENTE ${cliente.nome} ATUALIZADO PARA: ${valorFinal}`);
+                        carregarTabelaClientes();
+                        carregarDashboard();
+                        popularSelectClientes();
+                    }
+                }
+            }
+
+
+            window.atualizarDataPagamento = function(index, dataInput) {
+                const clientes = getClientes();
+                const cliente = clientes[index];
+                const dataPagamento = dataInput.value;
+                
+                // 1. ATUALIZA A DATA DE PAGAMENTO DO CLIENTE
+                cliente.dataPagamento = dataPagamento;
+                
+                if (dataPagamento) {
+                    // 2. CALCULA O PRÓXIMO VENCIMENTO BASEADO NA DATA DE PAGAMENTO
+                    const proximoVencimento = calcularProximoVencimento(dataPagamento);
+                    cliente.vencimento = proximoVencimento; 
+                }
+                
+                salvarClientes(clientes);
+                carregarHistoricoPagamentos(); 
+                carregarTabelaClientes(); 
+                carregarDashboard(); 
+            }
+
+            function popularSelectClientes() {
+                const clientes = getClientes();
+                const select = document.getElementById('clientePagamento');
+                
+                select.innerHTML = '<option value="">SELECIONE O CLIENTE</option>'; 
+                
+                clientes.forEach((c, index) => {
+                    const option = document.createElement('option');
+                    option.value = index; 
+                    option.textContent = `${c.nome} - PRÓX. VENCIMENTO: ${formatarData(c.vencimento)}`;
+                    select.appendChild(option);
+                });
+            }
+
+            formRegistroRapido.addEventListener('submit', (e) => {
+                e.preventDefault(); 
+                
+                const clientes = getClientes();
+                const index = document.getElementById('clientePagamento').value;
+                const cliente = clientes[index];
+
+                if (!cliente) {
+                    alert('POR FAVOR, SELECIONE UM CLIENTE VÁLIDO.');
+                    return;
+                }
+                
+                const dataPagamento = document.getElementById('dataPagamentoRapido').value;
+                const formaPagamento = document.getElementById('pagamentoRapido').value;
+                const banco = document.getElementById('bancoPagamentoRapido').value.toUpperCase(); 
+                
+                // 1. REGISTRA OS DADOS DO PAGAMENTO
+                cliente.dataPagamento = dataPagamento;
+                cliente.pagamento = formaPagamento; 
+                cliente.banco = banco; 
+
+                // 2. CALCULA O PRÓXIMO VENCIMENTO BASEADO NA DATA DE PAGAMENTO DO MÊS ATUAL
+                const proximoVencimento = calcularProximoVencimento(dataPagamento);
+                cliente.vencimento = proximoVencimento; 
+                
+                salvarClientes(clientes);
+                
+                alert(`PAGAMENTO DE ${cliente.nome} REGISTRADO! PRÓXIMA RENOVAÇÃO: ${formatarData(cliente.vencimento)}`);
+                formRegistroRapido.reset(); 
+                popularSelectClientes(); 
+                carregarTabelaClientes();
+                carregarDashboard();
+                mostrarSecao('#dados-clientes'); 
+            });
+
+
+            function carregarTabelaClientes() {
+                const clientes = getClientes();
+                const tabelaDiv = document.getElementById('tabela-dados-clientes');
+                
+                if (clientes.length === 0) {
+                    tabelaDiv.innerHTML = '<p style="text-align: center; color: #e67e22;">NENHUM CLIENTE CADASTRADO AINDA.</p>';
+                    return;
+                }
+
+                let html = '<table><thead><tr>';
+                html += '<th>CLIENTE</th><th>SERVIÇO</th><th>VALOR (R$)</th><th>VENCIMENTO</th><th>AÇÕES</th>'; 
+                html += '</tr></thead><tbody>';
+
+                clientes.forEach((c, index) => {
+                    const app = c.appNome || '-';
+                    const ultPag = c.dataPagamento ? formatarData(c.dataPagamento) : '-';
+                    
+                    html += '<tr>';
+                    html += `<td>${c.nome}</td>`;
+                    html += `<td>${c.servico}</td>`;
+                    html += `<td>${formatarMoeda(c.valor)}</td>`;
+                    html += `<td class="proxima-renovacao">${formatarData(c.vencimento)}</td>`; 
+                    html += `<td>
+                                <button class="botao-editar" onclick="editarCliente(${index})">EDITAR</button>
+                                <button class="botao-deletar" onclick="deletarCliente(${index})">DEL</button>
+                            </td>`; 
+                    html += '</tr>';
+                });
+
+                html += '</tbody></table>';
+                tabelaDiv.innerHTML = html;
+            }
+
+            window.carregarHistoricoPagamentos = function() {
+                const clientes = getClientes();
+                const tabelaDiv = document.getElementById('tabela-historico');
+                const filtro = document.getElementById('filtroPagamento').value; 
+
+                const clientesFiltrados = clientes.filter(cliente => {
+                    return filtro === 'todos' || cliente.pagamento === filtro;
+                });
+
+                if (clientesFiltrados.length === 0) {
+                    tabelaDiv.innerHTML = `<p style="text-align: center; color: #e67e22;">NENHUM CLIENTE ENCONTRADO COM A FORMA DE PAGAMENTO: ${filtro}.</p>`;
+                    return;
+                }
+
+                let html = '<table><thead><tr>';
+                html += '<th>CLIENTE</th><th>VENCIMENTO</th><th>DATA PGTO</th><th>VALOR (R$)</th><th>FORMA</th>'; 
+                html += '</tr></thead><tbody>';
+
+                clientesFiltrados.forEach((c, index) => {
+                    
+                    const dataPagamentoInput = `
+                        <input 
+                            type="date" 
+                            style="width: 100px; padding: 5px; font-size: 0.8em;"
+                            value="${c.dataPagamento || ''}"
+                            onchange="atualizarDataPagamento(${index}, this)"
+                        >
+                    `;
+                    
+                    html += '<tr>';
+                    html += `<td>${c.nome}</td>`;
+                    html += `<td class="proxima-renovacao">${formatarData(c.vencimento)}</td>`; 
+                    html += `<td>${dataPagamentoInput}</td>`;
+                    html += `<td>${formatarMoeda(c.valor)}</td>`; 
+                    html += `<td>${c.pagamento}</td>`;
+                    html += '</tr>';
+                });
+
+                html += '</tbody></table>';
+                tabelaDiv.innerHTML = html;
+            }
+            
+            // FUNÇÃO PRINCIPAL DO DASHBOARD
+            window.carregarDashboard = function() {
+                const clientes = getClientes();
+                let faturamentoTotal = 0;
+                let vencimentosEsteMes = 0;
+                let vencimentosProximoMes = 0;
+                
+                const dataAtual = new Date();
+                const mesAtual = dataAtual.getMonth() + 1;
+                const anoAtual = dataAtual.getFullYear();
+                
+                const mesProximo = mesAtual === 12 ? 1 : mesAtual + 1;
+                const anoProximo = mesAtual === 12 ? anoAtual + 1 : anoAtual;
+                
+                const mesAtualNome = new Date(anoAtual, mesAtual - 1, 1).toLocaleDateString('pt-BR', { month: 'long' }).toUpperCase();
+                const mesProximoNome = new Date(anoProximo, mesProximo - 1, 1).toLocaleDateString('pt-BR', { month: 'long' }).toUpperCase();
+                
+                let valorMesAtual = 0;
+                let valorProximoMes = 0;
+
+                // Atualiza títulos dos gráficos
+                document.getElementById('tituloMesAtual').innerText = mesAtualNome;
+                document.getElementById('tituloProximoMes').innerText = mesProximoNome;
+
+                clientes.forEach(cliente => {
+                    faturamentoTotal += parseFloat(cliente.valor || 0);
+
+                    // 1. CÁLCULO PARA O MÊS ATUAL
+                    if (cliente.vencimento) {
+                        const partesVencimento = cliente.vencimento.split('-');
+                        const anoVencimento = parseInt(partesVencimento[0]);
+                        const mesVencimento = parseInt(partesVencimento[1]);
+
+                        if (anoVencimento === anoAtual && mesVencimento === mesAtual) {
+                            vencimentosEsteMes++;
+                            valorMesAtual += parseFloat(cliente.valor || 0);
+                        } 
+                    }
+                    
+                    // 2. CÁLCULO PARA O PRÓXIMO MÊS (Lógica Aprimorada)
+                    let dataBaseParaProximaPrevisao = cliente.vencimento;
+                    
+                    // Prioriza a data de pagamento do mês atual para prever o próximo vencimento
+                    if (cliente.dataPagamento) {
+                        const partesPagamento = cliente.dataPagamento.split('-');
+                        const anoPagamento = parseInt(partesPagamento[0]);
+                        const mesPagamento = parseInt(partesPagamento[1]);
+                        
+                        // Verifica se o pagamento registrado é no Mês Atual e Ano Atual
+                        if (anoPagamento === anoAtual && mesPagamento === mesAtual) {
+                            dataBaseParaProximaPrevisao = cliente.dataPagamento;
+                        }
+                    }
+
+                    if (dataBaseParaProximaPrevisao) {
+                         const proximoVencimentoPrevisto = calcularProximoVencimento(dataBaseParaProximaPrevisao);
+                         const partesPrevisto = proximoVencimentoPrevisto.split('-');
+                         const anoPrevisto = parseInt(partesPrevisto[0]);
+                         const mesPrevisto = parseInt(partesPrevisto[1]);
+                        
+                        if (anoPrevisto === anoProximo && mesPrevisto === mesProximo) {
+                            vencimentosProximoMes++;
+                            valorProximoMes += parseFloat(cliente.valor || 0);
+                        }
+                    }
+
+                });
+
+                document.getElementById('valorFaturamento').innerText = formatarMoeda(faturamentoTotal);
+                document.getElementById('valorClientes').innerText = clientes.length;
+                document.getElementById('valorVencimentosMes').innerText = vencimentosEsteMes;
+                document.getElementById('valorVencimentosProximoMes').innerText = vencimentosProximoMes; 
+                
+                // Geração dos Gráficos:
+                gerarGraficoVencimentosPorMes(mesAtual, mesProximo, anoAtual, anoProximo);
+                gerarGraficoDistribuicao();
+            }
+            
+            // FUNÇÃO PRINCIPAL QUE GERA OS DOIS GRÁFICOS DE PIZZA LADO A LADO
+            function gerarGraficoVencimentosPorMes(mesAtual, mesProximo, anoAtual, anoProximo) {
+                const clientes = getClientes();
+                const mesesParaGerar = [
+                    { id: 'vencimentosMesAtualChart', mes: mesAtual, ano: anoAtual, nome: mesAtual },
+                    { id: 'vencimentosProximoMesChart', mes: mesProximo, ano: anoProximo, nome: mesProximo }
+                ];
+
+                const coresServicos = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
+                
+                mesesParaGerar.forEach((info, index) => {
+                    const canvas = document.getElementById(info.id);
+                    if (!canvas) return;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // 1. FILTRAR CLIENTES PELO MÊS E ANO
+                    const clientesDoMes = clientes.filter(cliente => {
+                        if (!cliente.vencimento) return false;
+                        
+                        let dataVencimento = cliente.vencimento;
+
+                        // Se for o próximo mês, usamos a previsão (calculo o proximo vencimento baseado no atual)
+                        if (index === 1 && cliente.dataPagamento) {
+                            dataVencimento = calcularProximoVencimento(cliente.dataPagamento);
+                        } else if (index === 1 && !cliente.dataPagamento) {
+                            dataVencimento = calcularProximoVencimento(cliente.vencimento);
+                        }
+                        
+                        const partesVencimento = dataVencimento.split('-');
+                        const anoVencimento = parseInt(partesVencimento[0]);
+                        const mesVencimento = parseInt(partesVencimento[1]);
+
+                        return anoVencimento === info.ano && mesVencimento === info.mes;
+                    });
+
+                    // 2. CONTAR CLIENTES POR SERVIÇO
+                    const contagemServicos = clientesDoMes.reduce((acc, cliente) => {
+                        const servico = cliente.servico;
+                        acc[servico] = (acc[servico] || 0) + 1;
+                        return acc;
+                    }, {});
+
+                    const labels = Object.keys(contagemServicos);
+                    const data = Object.values(contagemServicos);
+
+                    // Destrói o gráfico anterior
+                    if (info.id === 'vencimentosMesAtualChart' && vencimentosMesAtualChart) vencimentosMesAtualChart.destroy();
+                    if (info.id === 'vencimentosProximoMesChart' && vencimentosProximoMesChart) vencimentosProximoMesChart.destroy();
+                    
+                    if (data.length === 0) {
+                        canvas.parentNode.innerHTML = '<p style="text-align:center; color:#555;">Nenhum cliente com vencimento neste mês.</p>';
+                        return;
+                    }
+
+                    const chartConfig = {
+                        type: 'pie',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'CLIENTES',
+                                data: data,
+                                backgroundColor: coresServicos,
+                                hoverOffset: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'bottom' },
+                                title: { display: true, text: `DISTRIBUIÇÃO DE CLIENTES POR SERVIÇO` }
+                            }
+                        }
+                    };
+
+                    if (info.id === 'vencimentosMesAtualChart') {
+                        vencimentosMesAtualChart = new Chart(ctx, chartConfig);
+                    } else {
+                        vencimentosProximoMesChart = new Chart(ctx, chartConfig);
+                    }
+                });
+            }
+
+
+            function gerarGraficoDistribuicao() {
+                const clientes = getClientes();
+                const canvas = document.getElementById('dashboardServicosChart');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                
+                const contagemServicos = clientes.reduce((acc, cliente) => {
+                    const servico = cliente.servico;
+                    acc[servico] = (acc[servico] || 0) + 1;
+                    return acc;
+                }, {});
+
+                const labels = Object.keys(contagemServicos);
+                const data = Object.values(contagemServicos);
+
+                if (dashboardServicosChart) { 
+                    dashboardServicosChart.destroy(); 
+                }
+                
+                // MENSAGEM SE NÃO HOUVER CLIENTES
+                if (clientes.length === 0) {
+                     canvas.parentNode.innerHTML = '<p style="text-align:center; color:#e67e22;">Nenhum cliente cadastrado para exibir a distribuição.</p>';
+                     return;
+                }
+
+                dashboardServicosChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: { 
+                        labels: labels, 
+                        datasets: [{ 
+                            label: 'CLIENTES POR SERVIÇO', 
+                            data: data, 
+                            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'], 
+                            hoverOffset: 4 
+                        }] 
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        plugins: { 
+                            legend: { position: 'bottom' }, 
+                            title: { display: true, text: 'DISTRIBUIÇÃO DE CLIENTES POR SERVIÇO STREAM' } 
+                        } 
+                    }
+                });
+            }
+
+            function gerarGraficoVencimentosAnual() {
+                const clientes = getClientes();
+                const canvas = document.getElementById('vencimentosAnualChart');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                
+                const mesesVencimento = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+                const contagemMeses = Array(12).fill(0);
+                
+                clientes.forEach(cliente => {
+                    if (cliente.vencimento) {
+                        const mesIndex = parseInt(cliente.vencimento.substring(5, 7)) - 1; 
+                        if (mesIndex >= 0 && mesIndex < 12) {
+                            contagemMeses[mesIndex]++;
+                        }
+                    }
+                });
+
+                if (vencimentosAnualChart) { vencimentosAnualChart.destroy(); }
+                
+                if (clientes.length === 0) {
+                     canvas.parentNode.innerHTML = '<p style="text-align:center; color:#e67e22;">Nenhum cliente cadastrado para exibir vencimentos.</p>';
+                     return;
+                }
+
+                vencimentosAnualChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: mesesVencimento, datasets: [{ label: 'TOTAL DE VENCIMENTOS', data: contagemMeses, backgroundColor: '#28a745', borderColor: '#1e7e34', borderWidth: 1 }] },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, title: { display: true, text: 'NÚMERO DE CLIENTES' } } }, plugins: { title: { display: true, text: 'VENCIMENTOS DISTRIBUIÇÃO MENSAL' } } }
+                });
+            }
+
+            formCadastro.addEventListener('submit', (e) => {
+                e.preventDefault(); 
+
+                const novoCliente = {
+                    nome: document.getElementById('nome').value.toUpperCase(),
+                    servico: document.getElementById('servico').value, 
+                    appNome: document.getElementById('appNome').value.toUpperCase(),
+                    valor: document.getElementById('valor').value,
+                    vencimento: document.getElementById('vencimento').value,
+                    pagamento: document.getElementById('pagamento').value,
+                    banco: document.getElementById('banco').value.toUpperCase(),
+                    renovacao: '30',
+                    observacoes: document.getElementById('observacoes').value.toUpperCase(),
+                    dataPagamento: '' 
+                };
+
+                const clientes = getClientes();
+                clientes.push(novoCliente);
+                salvarClientes(clientes);
+                
+                formCadastro.reset();
+                alert(`CLIENTE ${novoCliente.nome} CADASTRADO COM SUCESSO!`);
+                mostrarSecao('#dados-clientes'); 
+            });
+
+            checkLogin();
+        });
+    </script>
+</body>
+</html>
