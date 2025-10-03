@@ -19,10 +19,7 @@
           appId: "SEU_APP_ID"
         };
 
-        // Inicializa o Firebase
         firebase.initializeApp(firebaseConfig);
-        
-        // Define o Realtime Database como a variável 'db'
         const db = firebase.database(); 
     </script>
     
@@ -48,6 +45,7 @@
             width: 100%;
             height: 100%;
             z-index: -1; 
+            /* ATENÇÃO: Verifique se 'foto1.jpg' está na raiz do GitHub! */
             background-image: url('foto1.jpg'); 
             background-size: cover; 
             background-position: center;
@@ -421,8 +419,6 @@
                 <h1>HISTÓRICO DE PAGAMENTOS</h1>
                 
                 <div class="form-container" style="margin-bottom: 20px;">
-                    <h2>REGISTRAR PAGAMENTO</h2>
-                    <p>AO REGISTRAR O PAGAMENTO EFETUADO, O SISTEMA IRÁ CALCULAR A **PRÓXIMA DATA DE VENCIMENTO** AUTOMATICAMENTE.</p>
                     <h2>FILTROS</h2>
                     <label for="filtroPagamento">Filtrar por Forma de Pagamento:</label>
                     <select id="filtroPagamento" onchange="carregarHistoricoPagamentos()">
@@ -468,43 +464,46 @@
         /* FUNÇÕES DE CONEXÃO COM REALTIME DATABASE (RTDB) */
         /* ---------------------------------------------------- */
         
-        /**
-         * LÊ TODOS OS CLIENTES DO RTDB.
-         */
         async function getClientesDoDatabase() {
-            const snapshot = await db.ref(CLIENTES_PATH).once('value');
-            const data = snapshot.val(); 
-
-            if (!data) return []; 
-
-            return Object.keys(data).map(id => ({
-                id: id, 
-                ...data[id]
-            }));
-        }
-
-        /**
-         * SALVA UM NOVO CLIENTE (OU ATUALIZA) NO RTDB.
-         */
-        async function salvarClienteNoDatabase(cliente) {
-            if (cliente.id) {
-                // ATUALIZAÇÃO
-                const { id, ...clienteData } = cliente; 
-                await db.ref(CLIENTES_PATH + '/' + id).update(clienteData);
-                return id;
-            } else {
-                // NOVO CLIENTE
-                const newRef = await db.ref(CLIENTES_PATH).push();
-                await newRef.set(cliente);
-                return newRef.key;
+            try {
+                const snapshot = await db.ref(CLIENTES_PATH).once('value');
+                const data = snapshot.val(); 
+                if (!data) return []; 
+                return Object.keys(data).map(id => ({
+                    id: id, 
+                    ...data[id]
+                }));
+            } catch (error) {
+                console.error("Erro ao carregar clientes do Firebase:", error);
+                alert("ERRO AO CARREGAR DADOS. Verifique as chaves de conexão do Firebase no console.");
+                return [];
             }
         }
 
-        /**
-         * DELETA UM CLIENTE USANDO SEU ID DO RTDB.
-         */
+        async function salvarClienteNoDatabase(cliente) {
+             try {
+                if (cliente.id) {
+                    const { id, ...clienteData } = cliente; 
+                    await db.ref(CLIENTES_PATH + '/' + id).update(clienteData);
+                    return id;
+                } else {
+                    const newRef = await db.ref(CLIENTES_PATH).push();
+                    await newRef.set(cliente);
+                    return newRef.key;
+                }
+            } catch (error) {
+                console.error("Erro ao salvar cliente no Firebase:", error);
+                alert("ERRO AO SALVAR DADOS. Verifique as chaves de conexão.");
+            }
+        }
+
         async function deletarClienteNoDatabase(id) {
-            await db.ref(CLIENTES_PATH + '/' + id).remove();
+             try {
+                await db.ref(CLIENTES_PATH + '/' + id).remove();
+            } catch (error) {
+                 console.error("Erro ao deletar cliente no Firebase:", error);
+                 alert("ERRO AO DELETAR. Verifique a conexão.");
+            }
         }
 
         /* ---------------------------------------------------- */
@@ -564,7 +563,8 @@
                 
                 pararRelogio(); 
                 
-                mostrarSecao('#dashboard'); 
+                // CORREÇÃO: Chama a função globalmente acessível
+                window.mostrarSecao('#dashboard'); 
                 setTimeout(carregarDashboard, 50); 
                
             } else {
@@ -600,9 +600,10 @@
         }
 
         /* ---------------------------------------------------- */
-        /* FUNÇÕES GERAIS DO PAINEL */
+        /* FUNÇÕES GERAIS DO PAINEL (CORRIGIDAS PARA ESCOPO GLOBAL) */
         /* ---------------------------------------------------- */
-        
+
+        // CORREÇÃO DE ESCOPO: Funções declaradas no escopo global
         const formatarMoeda = (valor) => {
             return parseFloat(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         };
@@ -636,48 +637,56 @@
             return `${ano}-${mes}-${dia}`;
         };
 
-        document.addEventListener('DOMContentLoaded', () => {
+
+        window.mostrarSecao = function(idSecao) { 
             const links = document.querySelectorAll('nav ul li a');
             const secoes = document.querySelectorAll('.secao');
+            
+            secoes.forEach(secao => { secao.style.display = 'none'; });
+            const secaoAtiva = document.querySelector(idSecao);
+            if (secaoAtiva) { secaoAtiva.style.display = 'block'; }
+            
+            links.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === idSecao) { link.classList.add('active'); }
+            });
+
+            if (idSecao === '#dashboard') {
+                carregarDashboard();
+            } else if (idSecao === '#dados-clientes') {
+                carregarTabelaClientes();
+                popularSelectClientes(); 
+            } else if (idSecao === '#graficos') {
+                // Aqui você pode chamar a função do gráfico anual
+            } else if (idSecao === '#historico-pagamentos') {
+                carregarHistoricoPagamentos();
+            }
+        }
+        
+        // Fim das correções de escopo
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const links = document.querySelectorAll('nav ul li a');
             const formCadastro = document.getElementById('cadastroClienteForm');
             const formRegistroRapido = document.getElementById('registroPagamentoForm'); 
             
-            function mostrarSecao(idSecao) {
-                secoes.forEach(secao => { secao.style.display = 'none'; });
-                const secaoAtiva = document.querySelector(idSecao);
-                if (secaoAtiva) { secaoAtiva.style.display = 'block'; }
-                
-                links.forEach(link => {
-                    link.classList.remove('active');
-                    if (link.getAttribute('href') === idSecao) { link.classList.add('active'); }
-                });
-
-                if (idSecao === '#dashboard') {
-                    carregarDashboard();
-                } else if (idSecao === '#dados-clientes') {
-                    carregarTabelaClientes();
-                    popularSelectClientes(); 
-                } else if (idSecao === '#graficos') {
-                    gerarGraficoVencimentosAnual(); 
-                } else if (idSecao === '#historico-pagamentos') {
-                    carregarHistoricoPagamentos();
-                }
-            }
             
+            // Event Listeners dos links de navegação
             links.forEach(link => {
                 link.addEventListener('click', (e) => {
                     e.preventDefault();
-                    mostrarSecao(link.getAttribute('href'));
+                    window.mostrarSecao(link.getAttribute('href')); // Chama a função global
                 });
             });
 
-            
-            window.deletarCliente = async function(id) { // AGORA É ASYNC
+
+            window.deletarCliente = async function(id) { 
                 const clientes = await getClientesDoDatabase();
                 const cliente = clientes.find(c => c.id === id);
 
                 if (confirm(`TEM CERTEZA QUE DESEJA DELETAR O CLIENTE ${cliente.nome}?`)) {
-                    await deletarClienteNoDatabase(id); // Usa a função RTDB
+                    await deletarClienteNoDatabase(id); 
                     
                     carregarTabelaClientes();
                     carregarDashboard(); 
@@ -686,7 +695,7 @@
                 }
             }
             
-            window.editarCliente = async function(id) { // AGORA É ASYNC
+            window.editarCliente = async function(id) { 
                 const clientes = await getClientesDoDatabase();
                 let cliente = clientes.find(c => c.id === id); 
                 
@@ -740,7 +749,7 @@
 
                         cliente[chave] = valorFinal;
                         
-                        await salvarClienteNoDatabase(cliente); // Usa a função RTDB para atualizar
+                        await salvarClienteNoDatabase(cliente); 
                         
                         alert(`CAMPO ${campoParaEditar} DO CLIENTE ${cliente.nome} ATUALIZADO PARA: ${valorFinal}`);
                         carregarTabelaClientes();
@@ -751,28 +760,26 @@
             }
 
 
-            window.atualizarDataPagamento = async function(id, dataInput) { // AGORA É ASYNC
+            window.atualizarDataPagamento = async function(id, dataInput) { 
                 const clientes = await getClientesDoDatabase();
                 const cliente = clientes.find(c => c.id === id);
                 const dataPagamento = dataInput.value;
                 
-                // 1. ATUALIZA A DATA DE PAGAMENTO DO CLIENTE
                 cliente.dataPagamento = dataPagamento;
                 
                 if (dataPagamento) {
-                    // 2. CALCULA O PRÓXIMO VENCIMENTO BASEADO NA DATA DE PAGAMENTO
                     const proximoVencimento = calcularProximoVencimento(dataPagamento);
                     cliente.vencimento = proximoVencimento; 
                 }
                 
-                await salvarClienteNoDatabase(cliente); // Salva a atualização no RTDB
+                await salvarClienteNoDatabase(cliente); 
 
                 carregarHistoricoPagamentos(); 
                 carregarTabelaClientes(); 
                 carregarDashboard(); 
             }
 
-            async function popularSelectClientes() { // AGORA É ASYNC
+            async function popularSelectClientes() { 
                 const clientes = await getClientesDoDatabase();
                 const select = document.getElementById('clientePagamento');
                 
@@ -786,7 +793,7 @@
                 });
             }
 
-            formRegistroRapido.addEventListener('submit', async (e) => { // AGORA É ASYNC
+            formRegistroRapido.addEventListener('submit', async (e) => { 
                 e.preventDefault(); 
                 
                 const clientes = await getClientesDoDatabase();
@@ -803,16 +810,14 @@
                 const formaPagamento = document.getElementById('pagamentoRapido').value;
                 const banco = document.getElementById('bancoPagamentoRapido').value.toUpperCase(); 
                 
-                // 1. REGISTRA OS DADOS DO PAGAMENTO
                 cliente.dataPagamento = dataPagamento;
                 cliente.pagamento = formaPagamento; 
                 cliente.banco = banco; 
 
-                // 2. CALCULA O PRÓXIMO VENCIMENTO BASEADO NA DATA DE PAGAMENTO DO MÊS ATUAL
                 const proximoVencimento = calcularProximoVencimento(dataPagamento);
                 cliente.vencimento = proximoVencimento; 
                 
-                await salvarClienteNoDatabase(cliente); // Salva no RTDB
+                await salvarClienteNoDatabase(cliente); 
                 
                 alert(`PAGAMENTO DE ${cliente.nome} REGISTRADO! PRÓXIMA RENOVAÇÃO: ${formatarData(cliente.vencimento)}`);
                 formRegistroRapido.reset(); 
@@ -823,8 +828,8 @@
             });
 
 
-            async function carregarTabelaClientes() { // AGORA É ASYNC
-                const clientes = await getClientesDoDatabase(); // Puxa do RTDB
+            async function carregarTabelaClientes() { 
+                const clientes = await getClientesDoDatabase(); 
                 const tabelaDiv = document.getElementById('tabela-dados-clientes');
                 
                 if (clientes.length === 0) {
@@ -836,7 +841,7 @@
                 html += '<th>CLIENTE</th><th>SERVIÇO</th><th>VALOR (R$)</th><th>VENCIMENTO</th><th>AÇÕES</th>'; 
                 html += '</tr></thead><tbody>';
 
-                clientes.forEach((c) => { // c.id é usado nos botões
+                clientes.forEach((c) => { 
                     html += '<tr>';
                     html += `<td>${c.nome}</td>`;
                     html += `<td>${c.servico}</td>`;
@@ -853,8 +858,8 @@
                 tabelaDiv.innerHTML = html;
             }
 
-            window.carregarHistoricoPagamentos = async function() { // AGORA É ASYNC
-                const clientes = await getClientesDoDatabase(); // Puxa do RTDB
+            window.carregarHistoricoPagamentos = async function() { 
+                const clientes = await getClientesDoDatabase(); 
                 const tabelaDiv = document.getElementById('tabela-historico');
                 const filtro = document.getElementById('filtroPagamento').value; 
 
@@ -871,7 +876,7 @@
                 html += '<th>CLIENTE</th><th>VENCIMENTO</th><th>DATA PGTO</th><th>VALOR (R$)</th><th>FORMA</th>'; 
                 html += '</tr></thead><tbody>';
 
-                clientesFiltrados.forEach((c) => { // c.id é usado no input
+                clientesFiltrados.forEach((c) => { 
                     
                     const dataPagamentoInput = `
                         <input 
@@ -896,8 +901,8 @@
             }
             
             // FUNÇÃO PRINCIPAL DO DASHBOARD
-            window.carregarDashboard = async function() { // AGORA É ASYNC
-                const clientes = await getClientesDoDatabase(); // Puxa do RTDB
+            window.carregarDashboard = async function() { 
+                const clientes = await getClientesDoDatabase(); 
                 let faturamentoTotal = 0;
                 let vencimentosEsteMes = 0;
                 let vencimentosProximoMes = 0;
@@ -963,26 +968,15 @@
                 document.getElementById('valorVencimentosMes').innerText = vencimentosEsteMes;
                 document.getElementById('valorVencimentosProximoMes').innerText = vencimentosProximoMes; 
                 
-                gerarGraficoVencimentosPorMes(mesAtual, mesProximo, anoAtual, anoProximo, clientes);
-                gerarGraficoDistribuicao(clientes);
+                // As funções de gráfico precisam ser definidas!
+                // gerarGraficoVencimentosPorMes(mesAtual, mesProximo, anoAtual, anoProximo, clientes);
+                // gerarGraficoDistribuicao(clientes);
             }
             
-            // FUNÇÃO PRINCIPAL QUE GERA OS DOIS GRÁFICOS DE PIZZA LADO A LADO
-            function gerarGraficoVencimentosPorMes(mesAtual, mesProximo, anoAtual, anoProximo, clientes) {
-                // ... (A lógica desta função permanece a mesma, mas agora recebe 'clientes' como parâmetro) ...
-            }
+            // As funções de gráfico (gerarGraficoVencimentosPorMes, gerarGraficoDistribuicao, gerarGraficoVencimentosAnual)
+            // precisam ser definidas para evitar erros.
 
-
-            function gerarGraficoDistribuicao(clientes) {
-                // ... (A lógica desta função permanece a mesma, mas agora recebe 'clientes' como parâmetro) ...
-            }
-
-            async function gerarGraficoVencimentosAnual() { // AGORA É ASYNC
-                const clientes = await getClientesDoDatabase(); // Puxa do RTDB
-                // ... (A lógica desta função permanece a mesma, mas agora usa 'clientes' do RTDB) ...
-            }
-
-            formCadastro.addEventListener('submit', async (e) => { // AGORA É ASYNC
+            formCadastro.addEventListener('submit', async (e) => { // CORREÇÃO: AGORA É ASYNC
                 e.preventDefault(); 
 
                 const novoCliente = {
@@ -998,21 +992,15 @@
                     dataPagamento: '' 
                 };
 
-                // SALVA NO REALTIME DATABASE E GERA UM ID AUTOMATICAMENTE
                 await salvarClienteNoDatabase(novoCliente);
                 
                 formCadastro.reset();
                 alert(`CLIENTE ${novoCliente.nome} CADASTRADO COM SUCESSO!`);
-                mostrarSecao('#dados-clientes'); 
+                window.mostrarSecao('#dados-clientes'); 
             });
 
             checkLogin();
         });
-        
-        // As funções de gráfico (gerarGraficoVencimentosPorMes, gerarGraficoDistribuicao, gerarGraficoVencimentosAnual)
-        // precisam ser definidas na área principal do script ou ter o código adaptado para receber 'clientes' como parâmetro.
-        // Se já estavam definidas, apenas certifique-se de que agora recebem 'clientes' quando são chamadas
-        // (como em carregarDashboard).
     </script>
 </body>
 </html>
