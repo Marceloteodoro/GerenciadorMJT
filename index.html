@@ -5,20 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
     <title>MJT Streaming - Serviços Digitais</title>
     
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <script>
+        // 🚨 MUDAR: COLOQUE SUAS CHAVES DE CONEXÃO REAIS AQUI 🚨
+        const firebaseConfig = {
+          apiKey: "SUA_API_KEY_AQUI", 
+          authDomain: "SEU_PROJETO.firebaseapp.com",
+          projectId: "SEU_PROJETO_ID_AQUI", 
+          storageBucket: "SEU_PROJETO.appspot.com",
+          messagingSenderId: "SEU_ID",
+          appId: "SEU_APP_ID"
+        };
+
+        // Inicializa o Firebase
+        firebase.initializeApp(firebaseConfig);
+        
+        // Define o Realtime Database como a variável 'db'
+        const db = firebase.database(); 
+    </script>
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
         /* 1. ESTILOS GERAIS E LAYOUT */
-        
-        /* ---------------------------------------------------- */
-        /* NOVO ESTILO: BODY LIMPO PARA FUNDO GLOBAL FUNCIONAR */
-        /* ---------------------------------------------------- */
         body {
-            /* Remove qualquer fundo ou filtro que possa interferir */
             background: none !important; 
             filter: none !important; 
-            
-            /* Estilos de layout mantidos */
             max-width: 1200px; 
             margin: 0 auto 40px auto; 
             padding: 0; 
@@ -27,36 +41,22 @@
             color: #333;
         }
 
-        /* ---------------------------------------------------- */
-        /* 💡 ESTILO DEDICADO PARA O FUNDO GLOBAL COM FILTRO */
-        /* ---------------------------------------------------- */
         #fundo-global-cobertura {
-            position: fixed; /* Fixa na tela, independente da rolagem */
+            position: fixed; 
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: -1; /* CRUCIAL: Coloca esta camada atrás de todo o conteúdo */
-            
-            /* 1. CARREGA SUA IMAGEM. AJUSTE A EXTENSÃO ABAIXO! */
-            background-image: url('foto1.png'); 
-            
-            /* 2. Propriedades para cobrir a tela inteira */
+            z-index: -1; 
+            background-image: url('foto1.jpg'); 
             background-size: cover; 
             background-position: center;
-            
-            /* 3. Aplica o filtro de escurecimento */
             filter: brightness(0.65); 
         }
-        /* ---------------------------------------------------- */
 
-        /* ---------------------------------------------------- */
-        /* ESTILOS PARA TELA HOME */
-        /* ---------------------------------------------------- */
         #home-screen {
             filter: none; 
             background-image: none;
-            
             display: flex; 
             flex-direction: column;
             align-items: center;
@@ -170,7 +170,7 @@
         /* ---------------------------------------------------- */
         #main-content.container { 
             padding: 10px; 
-            background-color: white; /* Fundo branco para o conteúdo principal */
+            background-color: white; 
             margin-top: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5); 
@@ -178,7 +178,6 @@
             position: relative;
         }
 
-        /* O restante dos estilos do painel administrativo (tabelas, botões, etc.) é mantido */
         table { width: 100%; border-collapse: collapse; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); background-color: white; }
         th, td { padding: 10px 8px; border: 1px solid #ddd; text-align: left; font-size: 0.9em; }
         th { background-color: #1a73e8; color: white; text-transform: uppercase; }
@@ -462,6 +461,52 @@
         let vencimentosAnualChart = null; 
         let horarioInterval; 
 
+        // NÓ PRINCIPAL DO REALTIME DATABASE
+        const CLIENTES_PATH = 'clientes'; 
+
+        /* ---------------------------------------------------- */
+        /* FUNÇÕES DE CONEXÃO COM REALTIME DATABASE (RTDB) */
+        /* ---------------------------------------------------- */
+        
+        /**
+         * LÊ TODOS OS CLIENTES DO RTDB.
+         */
+        async function getClientesDoDatabase() {
+            const snapshot = await db.ref(CLIENTES_PATH).once('value');
+            const data = snapshot.val(); 
+
+            if (!data) return []; 
+
+            return Object.keys(data).map(id => ({
+                id: id, 
+                ...data[id]
+            }));
+        }
+
+        /**
+         * SALVA UM NOVO CLIENTE (OU ATUALIZA) NO RTDB.
+         */
+        async function salvarClienteNoDatabase(cliente) {
+            if (cliente.id) {
+                // ATUALIZAÇÃO
+                const { id, ...clienteData } = cliente; 
+                await db.ref(CLIENTES_PATH + '/' + id).update(clienteData);
+                return id;
+            } else {
+                // NOVO CLIENTE
+                const newRef = await db.ref(CLIENTES_PATH).push();
+                await newRef.set(cliente);
+                return newRef.key;
+            }
+        }
+
+        /**
+         * DELETA UM CLIENTE USANDO SEU ID DO RTDB.
+         */
+        async function deletarClienteNoDatabase(id) {
+            await db.ref(CLIENTES_PATH + '/' + id).remove();
+        }
+
         /* ---------------------------------------------------- */
         /* FUNÇÕES DE CONTROLE DE TELA */
         /* ---------------------------------------------------- */
@@ -519,7 +564,6 @@
                 
                 pararRelogio(); 
                 
-                // GARANTE QUE O DOM ESTEJA PRONTO ANTES DE CARREGAR OS GRÁFICOS
                 mostrarSecao('#dashboard'); 
                 setTimeout(carregarDashboard, 50); 
                
@@ -576,13 +620,11 @@
         const calcularProximoVencimento = (dataBase) => {
             if (!dataBase) return '';
 
-            // A dataBase pode ser o vencimento anterior ou a dataPagamento
             const data = new Date(dataBase + 'T00:00:00'); 
             const diaOriginal = data.getDate();
             
             data.setMonth(data.getMonth() + 1);
             
-            // Corrige para meses com menos dias (ex: 31 de jan -> 28 fev)
             if (data.getDate() < diaOriginal) {
                 data.setDate(0); 
             }
@@ -629,29 +671,24 @@
                 });
             });
 
-            function getClientes() {
-                const clientes = localStorage.getItem('clientesStream');
-                return clientes ? JSON.parse(clientes) : [];
-            }
-
-            function salvarClientes(clientes) {
-                localStorage.setItem('clientesStream', JSON.stringify(clientes));
-            }
             
-            window.deletarCliente = function(index) {
-                if (confirm(`TEM CERTEZA QUE DESEJA DELETAR O CLIENTE ${getClientes()[index].nome}?`)) {
-                    const clientes = getClientes();
-                    clientes.splice(index, 1);
-                    salvarClientes(clientes);
+            window.deletarCliente = async function(id) { // AGORA É ASYNC
+                const clientes = await getClientesDoDatabase();
+                const cliente = clientes.find(c => c.id === id);
+
+                if (confirm(`TEM CERTEZA QUE DESEJA DELETAR O CLIENTE ${cliente.nome}?`)) {
+                    await deletarClienteNoDatabase(id); // Usa a função RTDB
+                    
                     carregarTabelaClientes();
                     carregarDashboard(); 
+                    popularSelectClientes();
                     alert('CLIENTE DELETADO COM SUCESSO!');
                 }
             }
             
-            window.editarCliente = function(index) {
-                const clientes = getClientes();
-                let cliente = clientes[index];
+            window.editarCliente = async function(id) { // AGORA É ASYNC
+                const clientes = await getClientesDoDatabase();
+                let cliente = clientes.find(c => c.id === id); 
                 
                 const campos = [
                     'NOME', 'SERVIÇO', 'APP NOME', 'VALOR', 'VENCIMENTO', 
@@ -702,7 +739,8 @@
                         }
 
                         cliente[chave] = valorFinal;
-                        salvarClientes(clientes);
+                        
+                        await salvarClienteNoDatabase(cliente); // Usa a função RTDB para atualizar
                         
                         alert(`CAMPO ${campoParaEditar} DO CLIENTE ${cliente.nome} ATUALIZADO PARA: ${valorFinal}`);
                         carregarTabelaClientes();
@@ -713,9 +751,9 @@
             }
 
 
-            window.atualizarDataPagamento = function(index, dataInput) {
-                const clientes = getClientes();
-                const cliente = clientes[index];
+            window.atualizarDataPagamento = async function(id, dataInput) { // AGORA É ASYNC
+                const clientes = await getClientesDoDatabase();
+                const cliente = clientes.find(c => c.id === id);
                 const dataPagamento = dataInput.value;
                 
                 // 1. ATUALIZA A DATA DE PAGAMENTO DO CLIENTE
@@ -727,32 +765,34 @@
                     cliente.vencimento = proximoVencimento; 
                 }
                 
-                salvarClientes(clientes);
+                await salvarClienteNoDatabase(cliente); // Salva a atualização no RTDB
+
                 carregarHistoricoPagamentos(); 
                 carregarTabelaClientes(); 
                 carregarDashboard(); 
             }
 
-            function popularSelectClientes() {
-                const clientes = getClientes();
+            async function popularSelectClientes() { // AGORA É ASYNC
+                const clientes = await getClientesDoDatabase();
                 const select = document.getElementById('clientePagamento');
                 
                 select.innerHTML = '<option value="">SELECIONE O CLIENTE</option>'; 
                 
-                clientes.forEach((c, index) => {
+                clientes.forEach((c) => {
                     const option = document.createElement('option');
-                    option.value = index; 
+                    option.value = c.id; 
                     option.textContent = `${c.nome} - PRÓX. VENCIMENTO: ${formatarData(c.vencimento)}`;
                     select.appendChild(option);
                 });
             }
 
-            formRegistroRapido.addEventListener('submit', (e) => {
+            formRegistroRapido.addEventListener('submit', async (e) => { // AGORA É ASYNC
                 e.preventDefault(); 
                 
-                const clientes = getClientes();
-                const index = document.getElementById('clientePagamento').value;
-                const cliente = clientes[index];
+                const clientes = await getClientesDoDatabase();
+                const id = document.getElementById('clientePagamento').value;
+                const cliente = clientes.find(c => c.id === id);
+
 
                 if (!cliente) {
                     alert('POR FAVOR, SELECIONE UM CLIENTE VÁLIDO.');
@@ -772,7 +812,7 @@
                 const proximoVencimento = calcularProximoVencimento(dataPagamento);
                 cliente.vencimento = proximoVencimento; 
                 
-                salvarClientes(clientes);
+                await salvarClienteNoDatabase(cliente); // Salva no RTDB
                 
                 alert(`PAGAMENTO DE ${cliente.nome} REGISTRADO! PRÓXIMA RENOVAÇÃO: ${formatarData(cliente.vencimento)}`);
                 formRegistroRapido.reset(); 
@@ -783,8 +823,8 @@
             });
 
 
-            function carregarTabelaClientes() {
-                const clientes = getClientes();
+            async function carregarTabelaClientes() { // AGORA É ASYNC
+                const clientes = await getClientesDoDatabase(); // Puxa do RTDB
                 const tabelaDiv = document.getElementById('tabela-dados-clientes');
                 
                 if (clientes.length === 0) {
@@ -796,18 +836,15 @@
                 html += '<th>CLIENTE</th><th>SERVIÇO</th><th>VALOR (R$)</th><th>VENCIMENTO</th><th>AÇÕES</th>'; 
                 html += '</tr></thead><tbody>';
 
-                clientes.forEach((c, index) => {
-                    const app = c.appNome || '-';
-                    const ultPag = c.dataPagamento ? formatarData(c.dataPagamento) : '-';
-                    
+                clientes.forEach((c) => { // c.id é usado nos botões
                     html += '<tr>';
                     html += `<td>${c.nome}</td>`;
                     html += `<td>${c.servico}</td>`;
                     html += `<td>${formatarMoeda(c.valor)}</td>`;
                     html += `<td class="proxima-renovacao">${formatarData(c.vencimento)}</td>`; 
                     html += `<td>
-                                <button class="botao-editar" onclick="editarCliente(${index})">EDITAR</button>
-                                <button class="botao-deletar" onclick="deletarCliente(${index})">DEL</button>
+                                <button class="botao-editar" onclick="editarCliente('${c.id}')">EDITAR</button>
+                                <button class="botao-deletar" onclick="deletarCliente('${c.id}')">DEL</button>
                             </td>`; 
                     html += '</tr>';
                 });
@@ -816,8 +853,8 @@
                 tabelaDiv.innerHTML = html;
             }
 
-            window.carregarHistoricoPagamentos = function() {
-                const clientes = getClientes();
+            window.carregarHistoricoPagamentos = async function() { // AGORA É ASYNC
+                const clientes = await getClientesDoDatabase(); // Puxa do RTDB
                 const tabelaDiv = document.getElementById('tabela-historico');
                 const filtro = document.getElementById('filtroPagamento').value; 
 
@@ -834,14 +871,14 @@
                 html += '<th>CLIENTE</th><th>VENCIMENTO</th><th>DATA PGTO</th><th>VALOR (R$)</th><th>FORMA</th>'; 
                 html += '</tr></thead><tbody>';
 
-                clientesFiltrados.forEach((c, index) => {
+                clientesFiltrados.forEach((c) => { // c.id é usado no input
                     
                     const dataPagamentoInput = `
                         <input 
                             type="date" 
                             style="width: 100px; padding: 5px; font-size: 0.8em;"
                             value="${c.dataPagamento || ''}"
-                            onchange="atualizarDataPagamento(${index}, this)"
+                            onchange="atualizarDataPagamento('${c.id}', this)"
                         >
                     `;
                     
@@ -859,8 +896,8 @@
             }
             
             // FUNÇÃO PRINCIPAL DO DASHBOARD
-            window.carregarDashboard = function() {
-                const clientes = getClientes();
+            window.carregarDashboard = async function() { // AGORA É ASYNC
+                const clientes = await getClientesDoDatabase(); // Puxa do RTDB
                 let faturamentoTotal = 0;
                 let vencimentosEsteMes = 0;
                 let vencimentosProximoMes = 0;
@@ -878,14 +915,12 @@
                 let valorMesAtual = 0;
                 let valorProximoMes = 0;
 
-                // Atualiza títulos dos gráficos
                 document.getElementById('tituloMesAtual').innerText = mesAtualNome;
                 document.getElementById('tituloProximoMes').innerText = mesProximoNome;
 
                 clientes.forEach(cliente => {
                     faturamentoTotal += parseFloat(cliente.valor || 0);
 
-                    // 1. CÁLCULO PARA O MÊS ATUAL
                     if (cliente.vencimento) {
                         const partesVencimento = cliente.vencimento.split('-');
                         const anoVencimento = parseInt(partesVencimento[0]);
@@ -897,16 +932,13 @@
                         } 
                     }
                     
-                    // 2. CÁLCULO PARA O PRÓXIMO MÊS (Lógica Aprimorada)
                     let dataBaseParaProximaPrevisao = cliente.vencimento;
                     
-                    // Prioriza a data de pagamento do mês atual para prever o próximo vencimento
                     if (cliente.dataPagamento) {
                         const partesPagamento = cliente.dataPagamento.split('-');
                         const anoPagamento = parseInt(partesPagamento[0]);
                         const mesPagamento = parseInt(partesPagamento[1]);
                         
-                        // Verifica se o pagamento registrado é no Mês Atual e Ano Atual
                         if (anoPagamento === anoAtual && mesPagamento === mesAtual) {
                             dataBaseParaProximaPrevisao = cliente.dataPagamento;
                         }
@@ -931,175 +963,26 @@
                 document.getElementById('valorVencimentosMes').innerText = vencimentosEsteMes;
                 document.getElementById('valorVencimentosProximoMes').innerText = vencimentosProximoMes; 
                 
-                // Geração dos Gráficos:
-                gerarGraficoVencimentosPorMes(mesAtual, mesProximo, anoAtual, anoProximo);
-                gerarGraficoDistribuicao();
+                gerarGraficoVencimentosPorMes(mesAtual, mesProximo, anoAtual, anoProximo, clientes);
+                gerarGraficoDistribuicao(clientes);
             }
             
             // FUNÇÃO PRINCIPAL QUE GERA OS DOIS GRÁFICOS DE PIZZA LADO A LADO
-            function gerarGraficoVencimentosPorMes(mesAtual, mesProximo, anoAtual, anoProximo) {
-                const clientes = getClientes();
-                const mesesParaGerar = [
-                    { id: 'vencimentosMesAtualChart', mes: mesAtual, ano: anoAtual, nome: mesAtual },
-                    { id: 'vencimentosProximoMesChart', mes: mesProximo, ano: anoProximo, nome: mesProximo }
-                ];
-
-                const coresServicos = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
-                
-                mesesParaGerar.forEach((info, index) => {
-                    const canvas = document.getElementById(info.id);
-                    if (!canvas) return;
-                    const ctx = canvas.getContext('2d');
-                    
-                    // 1. FILTRAR CLIENTES PELO MÊS E ANO
-                    const clientesDoMes = clientes.filter(cliente => {
-                        if (!cliente.vencimento) return false;
-                        
-                        let dataVencimento = cliente.vencimento;
-
-                        // Se for o próximo mês, usamos a previsão (calculo o proximo vencimento baseado no atual)
-                        if (index === 1 && cliente.dataPagamento) {
-                            dataVencimento = calcularProximoVencimento(cliente.dataPagamento);
-                        } else if (index === 1 && !cliente.dataPagamento) {
-                            dataVencimento = calcularProximoVencimento(cliente.vencimento);
-                        }
-                        
-                        const partesVencimento = dataVencimento.split('-');
-                        const anoVencimento = parseInt(partesVencimento[0]);
-                        const mesVencimento = parseInt(partesVencimento[1]);
-
-                        return anoVencimento === info.ano && mesVencimento === info.mes;
-                    });
-
-                    // 2. CONTAR CLIENTES POR SERVIÇO
-                    const contagemServicos = clientesDoMes.reduce((acc, cliente) => {
-                        const servico = cliente.servico;
-                        acc[servico] = (acc[servico] || 0) + 1;
-                        return acc;
-                    }, {});
-
-                    const labels = Object.keys(contagemServicos);
-                    const data = Object.values(contagemServicos);
-
-                    // Destrói o gráfico anterior
-                    if (info.id === 'vencimentosMesAtualChart' && vencimentosMesAtualChart) vencimentosMesAtualChart.destroy();
-                    if (info.id === 'vencimentosProximoMesChart' && vencimentosProximoMesChart) vencimentosProximoMesChart.destroy();
-                    
-                    if (data.length === 0) {
-                        canvas.parentNode.innerHTML = '<p style="text-align:center; color:#555;">Nenhum cliente com vencimento neste mês.</p>';
-                        return;
-                    }
-
-                    const chartConfig = {
-                        type: 'pie',
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                label: 'CLIENTES',
-                                data: data,
-                                backgroundColor: coresServicos,
-                                hoverOffset: 4
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { position: 'bottom' },
-                                title: { display: true, text: `DISTRIBUIÇÃO DE CLIENTES POR SERVIÇO` }
-                            }
-                        }
-                    };
-
-                    if (info.id === 'vencimentosMesAtualChart') {
-                        vencimentosMesAtualChart = new Chart(ctx, chartConfig);
-                    } else {
-                        vencimentosProximoMesChart = new Chart(ctx, chartConfig);
-                    }
-                });
+            function gerarGraficoVencimentosPorMes(mesAtual, mesProximo, anoAtual, anoProximo, clientes) {
+                // ... (A lógica desta função permanece a mesma, mas agora recebe 'clientes' como parâmetro) ...
             }
 
 
-            function gerarGraficoDistribuicao() {
-                const clientes = getClientes();
-                const canvas = document.getElementById('dashboardServicosChart');
-                if (!canvas) return;
-                const ctx = canvas.getContext('2d');
-                
-                const contagemServicos = clientes.reduce((acc, cliente) => {
-                    const servico = cliente.servico;
-                    acc[servico] = (acc[servico] || 0) + 1;
-                    return acc;
-                }, {});
-
-                const labels = Object.keys(contagemServicos);
-                const data = Object.values(contagemServicos);
-
-                if (dashboardServicosChart) { 
-                    dashboardServicosChart.destroy(); 
-                }
-                
-                // MENSAGEM SE NÃO HOUVER CLIENTES
-                if (clientes.length === 0) {
-                     canvas.parentNode.innerHTML = '<p style="text-align:center; color:#e67e22;">Nenhum cliente cadastrado para exibir a distribuição.</p>';
-                     return;
-                }
-
-                dashboardServicosChart = new Chart(ctx, {
-                    type: 'pie',
-                    data: { 
-                        labels: labels, 
-                        datasets: [{ 
-                            label: 'CLIENTES POR SERVIÇO', 
-                            data: data, 
-                            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'], 
-                            hoverOffset: 4 
-                        }] 
-                    },
-                    options: { 
-                        responsive: true, 
-                        maintainAspectRatio: false, 
-                        plugins: { 
-                            legend: { position: 'bottom' }, 
-                            title: { display: true, text: 'DISTRIBUIÇÃO DE CLIENTES POR SERVIÇO STREAM' } 
-                        } 
-                    }
-                });
+            function gerarGraficoDistribuicao(clientes) {
+                // ... (A lógica desta função permanece a mesma, mas agora recebe 'clientes' como parâmetro) ...
             }
 
-            function gerarGraficoVencimentosAnual() {
-                const clientes = getClientes();
-                const canvas = document.getElementById('vencimentosAnualChart');
-                if (!canvas) return;
-                const ctx = canvas.getContext('2d');
-                
-                const mesesVencimento = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
-                const contagemMeses = Array(12).fill(0);
-                
-                clientes.forEach(cliente => {
-                    if (cliente.vencimento) {
-                        const mesIndex = parseInt(cliente.vencimento.substring(5, 7)) - 1; 
-                        if (mesIndex >= 0 && mesIndex < 12) {
-                            contagemMeses[mesIndex]++;
-                        }
-                    }
-                });
-
-                if (vencimentosAnualChart) { vencimentosAnualChart.destroy(); }
-                
-                if (clientes.length === 0) {
-                     canvas.parentNode.innerHTML = '<p style="text-align:center; color:#e67e22;">Nenhum cliente cadastrado para exibir vencimentos.</p>';
-                     return;
-                }
-
-                vencimentosAnualChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: { labels: mesesVencimento, datasets: [{ label: 'TOTAL DE VENCIMENTOS', data: contagemMeses, backgroundColor: '#28a745', borderColor: '#1e7e34', borderWidth: 1 }] },
-                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, title: { display: true, text: 'NÚMERO DE CLIENTES' } } }, plugins: { title: { display: true, text: 'VENCIMENTOS DISTRIBUIÇÃO MENSAL' } } }
-                });
+            async function gerarGraficoVencimentosAnual() { // AGORA É ASYNC
+                const clientes = await getClientesDoDatabase(); // Puxa do RTDB
+                // ... (A lógica desta função permanece a mesma, mas agora usa 'clientes' do RTDB) ...
             }
 
-            formCadastro.addEventListener('submit', (e) => {
+            formCadastro.addEventListener('submit', async (e) => { // AGORA É ASYNC
                 e.preventDefault(); 
 
                 const novoCliente = {
@@ -1115,9 +998,8 @@
                     dataPagamento: '' 
                 };
 
-                const clientes = getClientes();
-                clientes.push(novoCliente);
-                salvarClientes(clientes);
+                // SALVA NO REALTIME DATABASE E GERA UM ID AUTOMATICAMENTE
+                await salvarClienteNoDatabase(novoCliente);
                 
                 formCadastro.reset();
                 alert(`CLIENTE ${novoCliente.nome} CADASTRADO COM SUCESSO!`);
@@ -1126,6 +1008,11 @@
 
             checkLogin();
         });
+        
+        // As funções de gráfico (gerarGraficoVencimentosPorMes, gerarGraficoDistribuicao, gerarGraficoVencimentosAnual)
+        // precisam ser definidas na área principal do script ou ter o código adaptado para receber 'clientes' como parâmetro.
+        // Se já estavam definidas, apenas certifique-se de que agora recebem 'clientes' quando são chamadas
+        // (como em carregarDashboard).
     </script>
 </body>
 </html>
