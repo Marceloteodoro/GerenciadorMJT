@@ -5,22 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
     <title>MJT Streaming - Serviços Digitais</title>
     
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-        // 🚨 MUDAR: COLOQUE SUAS CHAVES DE CONEXÃO REAIS AQUI 🚨
-        const firebaseConfig = {
-          apiKey: "SUA_API_KEY_AQUI", 
-          authDomain: "SEU_PROJETO.firebaseapp.com",
-          projectId: "SEU_PROJETO_ID_AQUI", 
-          storageBucket: "SEU_PROJETO.appspot.com",
-          messagingSenderId: "SEU_ID",
-          appId: "SEU_APP_ID"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database(); 
+        // 🚨 MUDAR: COLOQUE SEUS VALORES REAIS DO SUPABASE AQUI 🚨
+        const SUPABASE_URL = "https://glgxgqeokmpklelhmpnm.supabase.co"; // EX: https://abcdefghijklmn.supabase.co
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsZ3hncWVva21wa2xlbGhtcG5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1NzAwMTgsImV4cCI6MjA3NTE0NjAxOH0.xOL1iiq5nd0ivZm1q1C2TyiGUBy2__1VcRPRCpO4uag"; // EX: eyJhbGciOiJIUzI1NiI...
+        
+        // Inicializa o cliente Supabase
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // NOME DA TABELA
+        const TABELA_CLIENTES = 'clientes';
     </script>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -46,7 +42,7 @@
             height: 100%;
             z-index: -1; 
             /* ATENÇÃO: Verifique se 'foto1.jpg' está na raiz do GitHub! */
-            background-image: url('foto1.png'); 
+            background-image: url('foto1.jpg'); 
             background-size: cover; 
             background-position: center;
             filter: brightness(0.65); 
@@ -457,25 +453,22 @@
         let vencimentosAnualChart = null; 
         let horarioInterval; 
 
-        // NÓ PRINCIPAL DO REALTIME DATABASE
-        const CLIENTES_PATH = 'clientes'; 
-
         /* ---------------------------------------------------- */
-        /* FUNÇÕES DE CONEXÃO COM REALTIME DATABASE (RTDB) */
+        /* FUNÇÕES DE CONEXÃO COM SUPABASE (SUBSTITUIÇÃO DO FIREBASE) */
         /* ---------------------------------------------------- */
         
         async function getClientesDoDatabase() {
             try {
-                const snapshot = await db.ref(CLIENTES_PATH).once('value');
-                const data = snapshot.val(); 
-                if (!data) return []; 
-                return Object.keys(data).map(id => ({
-                    id: id, 
-                    ...data[id]
-                }));
+                const { data, error } = await supabase
+                    .from(TABELA_CLIENTES)
+                    .select('*'); 
+                    
+                if (error) throw error;
+                
+                return data || []; 
             } catch (error) {
-                console.error("Erro ao carregar clientes do Firebase:", error);
-                alert("ERRO AO CARREGAR DADOS. Verifique as chaves de conexão do Firebase no console.");
+                console.error("Erro ao carregar clientes do Supabase:", error);
+                alert("ERRO AO CARREGAR DADOS. Verifique as chaves de conexão ou as regras de RLS do Supabase.");
                 return [];
             }
         }
@@ -483,28 +476,45 @@
         async function salvarClienteNoDatabase(cliente) {
              try {
                 if (cliente.id) {
-                    const { id, ...clienteData } = cliente; 
-                    await db.ref(CLIENTES_PATH + '/' + id).update(clienteData);
-                    return id;
+                    // Se tem ID, é UPDATE
+                    const { error } = await supabase
+                        .from(TABELA_CLIENTES)
+                        .update(cliente) 
+                        .eq('id', cliente.id); 
+                        
+                    if (error) throw error;
+                    return cliente.id;
                 } else {
-                    const newRef = await db.ref(CLIENTES_PATH).push();
-                    await newRef.set(cliente);
-                    return newRef.key;
+                    // Se NÃO tem ID, é INSERT (Novo Cliente)
+                    const { data, error } = await supabase
+                        .from(TABELA_CLIENTES)
+                        .insert([cliente])
+                        .select(); // Adicionado .select() para retornar o dado inserido
+                        
+                    if (error) throw error;
+                    
+                    return data[0]?.id; 
                 }
             } catch (error) {
-                console.error("Erro ao salvar cliente no Firebase:", error);
-                alert("ERRO AO SALVAR DADOS. Verifique as chaves de conexão.");
+                console.error("Erro ao salvar cliente no Supabase:", error);
+                alert("ERRO AO SALVAR DADOS. Verifique as chaves e a estrutura da tabela.");
             }
         }
 
         async function deletarClienteNoDatabase(id) {
              try {
-                await db.ref(CLIENTES_PATH + '/' + id).remove();
+                const { error } = await supabase
+                    .from(TABELA_CLIENTES)
+                    .delete()
+                    .eq('id', id); 
+                    
+                if (error) throw error;
             } catch (error) {
-                 console.error("Erro ao deletar cliente no Firebase:", error);
+                 console.error("Erro ao deletar cliente no Supabase:", error);
                  alert("ERRO AO DELETAR. Verifique a conexão.");
             }
         }
+
 
         /* ---------------------------------------------------- */
         /* FUNÇÕES DE CONTROLE DE TELA */
@@ -563,7 +573,6 @@
                 
                 pararRelogio(); 
                 
-                // CORREÇÃO: Chama a função globalmente acessível
                 window.mostrarSecao('#dashboard'); 
                 setTimeout(carregarDashboard, 50); 
                
@@ -603,7 +612,6 @@
         /* FUNÇÕES GERAIS DO PAINEL (CORRIGIDAS PARA ESCOPO GLOBAL) */
         /* ---------------------------------------------------- */
 
-        // CORREÇÃO DE ESCOPO: Funções declaradas no escopo global
         const formatarMoeda = (valor) => {
             return parseFloat(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         };
@@ -663,9 +671,6 @@
             }
         }
         
-        // Fim das correções de escopo
-
-
         document.addEventListener('DOMContentLoaded', () => {
             const links = document.querySelectorAll('nav ul li a');
             const formCadastro = document.getElementById('cadastroClienteForm');
@@ -697,6 +702,7 @@
             
             window.editarCliente = async function(id) { 
                 const clientes = await getClientesDoDatabase();
+                // O Supabase usa a propriedade 'id'
                 let cliente = clientes.find(c => c.id === id); 
                 
                 const campos = [
@@ -747,9 +753,11 @@
                             valorFinal = valorNumerico.toFixed(2); 
                         }
 
-                        cliente[chave] = valorFinal;
+                        // Cria um objeto de atualização
+                        const updateData = { id: cliente.id };
+                        updateData[chave] = valorFinal;
                         
-                        await salvarClienteNoDatabase(cliente); 
+                        await salvarClienteNoDatabase(updateData); // Envia o objeto de atualização
                         
                         alert(`CAMPO ${campoParaEditar} DO CLIENTE ${cliente.nome} ATUALIZADO PARA: ${valorFinal}`);
                         carregarTabelaClientes();
@@ -765,14 +773,14 @@
                 const cliente = clientes.find(c => c.id === id);
                 const dataPagamento = dataInput.value;
                 
-                cliente.dataPagamento = dataPagamento;
+                const updateData = { id: id, dataPagamento: dataPagamento };
                 
                 if (dataPagamento) {
                     const proximoVencimento = calcularProximoVencimento(dataPagamento);
-                    cliente.vencimento = proximoVencimento; 
+                    updateData.vencimento = proximoVencimento; 
                 }
                 
-                await salvarClienteNoDatabase(cliente); 
+                await salvarClienteNoDatabase(updateData); 
 
                 carregarHistoricoPagamentos(); 
                 carregarTabelaClientes(); 
@@ -810,16 +818,20 @@
                 const formaPagamento = document.getElementById('pagamentoRapido').value;
                 const banco = document.getElementById('bancoPagamentoRapido').value.toUpperCase(); 
                 
-                cliente.dataPagamento = dataPagamento;
-                cliente.pagamento = formaPagamento; 
-                cliente.banco = banco; 
+                // Cria o objeto de atualização
+                const updateData = { 
+                    id: id, 
+                    dataPagamento: dataPagamento,
+                    pagamento: formaPagamento, 
+                    banco: banco 
+                };
 
                 const proximoVencimento = calcularProximoVencimento(dataPagamento);
-                cliente.vencimento = proximoVencimento; 
+                updateData.vencimento = proximoVencimento; 
                 
-                await salvarClienteNoDatabase(cliente); 
+                await salvarClienteNoDatabase(updateData); 
                 
-                alert(`PAGAMENTO DE ${cliente.nome} REGISTRADO! PRÓXIMA RENOVAÇÃO: ${formatarData(cliente.vencimento)}`);
+                alert(`PAGAMENTO DE ${cliente.nome} REGISTRADO! PRÓXIMA RENOVAÇÃO: ${formatarData(updateData.vencimento)}`);
                 formRegistroRapido.reset(); 
                 popularSelectClientes(); 
                 carregarTabelaClientes();
@@ -924,16 +936,19 @@
                 document.getElementById('tituloProximoMes').innerText = mesProximoNome;
 
                 clientes.forEach(cliente => {
-                    faturamentoTotal += parseFloat(cliente.valor || 0);
+                    // Garante que o valor é um número
+                    const valorCliente = parseFloat(cliente.valor || 0);
+                    faturamentoTotal += valorCliente;
 
                     if (cliente.vencimento) {
                         const partesVencimento = cliente.vencimento.split('-');
                         const anoVencimento = parseInt(partesVencimento[0]);
                         const mesVencimento = parseInt(partesVencimento[1]);
 
+                        // Verifica vencimentos no mês atual
                         if (anoVencimento === anoAtual && mesVencimento === mesAtual) {
                             vencimentosEsteMes++;
-                            valorMesAtual += parseFloat(cliente.valor || 0);
+                            valorMesAtual += valorCliente;
                         } 
                     }
                     
@@ -944,6 +959,7 @@
                         const anoPagamento = parseInt(partesPagamento[0]);
                         const mesPagamento = parseInt(partesPagamento[1]);
                         
+                        // Se o pagamento foi feito no mês atual, baseamos a próxima previsão nele
                         if (anoPagamento === anoAtual && mesPagamento === mesAtual) {
                             dataBaseParaProximaPrevisao = cliente.dataPagamento;
                         }
@@ -955,9 +971,10 @@
                          const anoPrevisto = parseInt(partesPrevisto[0]);
                          const mesPrevisto = parseInt(partesPrevisto[1]);
                         
+                        // Verifica vencimentos no próximo mês
                         if (anoPrevisto === anoProximo && mesPrevisto === mesProximo) {
                             vencimentosProximoMes++;
-                            valorProximoMes += parseFloat(cliente.valor || 0);
+                            valorProximoMes += valorCliente;
                         }
                     }
 
@@ -976,7 +993,7 @@
             // As funções de gráfico (gerarGraficoVencimentosPorMes, gerarGraficoDistribuicao, gerarGraficoVencimentosAnual)
             // precisam ser definidas para evitar erros.
 
-            formCadastro.addEventListener('submit', async (e) => { // CORREÇÃO: AGORA É ASYNC
+            formCadastro.addEventListener('submit', async (e) => { 
                 e.preventDefault(); 
 
                 const novoCliente = {
@@ -987,10 +1004,13 @@
                     vencimento: document.getElementById('vencimento').value,
                     pagamento: document.getElementById('pagamento').value,
                     banco: document.getElementById('banco').value.toUpperCase(),
-                    renovacao: '30',
+                    renovacao: '30', // Mantido como texto, mas não é usado no cálculo de renovação
                     observacoes: document.getElementById('observacoes').value.toUpperCase(),
                     dataPagamento: '' 
                 };
+                
+                // Remove o campo id antes de inserir, pois ele será criado automaticamente pelo Supabase
+                delete novoCliente.id;
 
                 await salvarClienteNoDatabase(novoCliente);
                 
@@ -1004,4 +1024,3 @@
     </script>
 </body>
 </html>
-
